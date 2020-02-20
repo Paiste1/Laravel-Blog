@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PostController extends Controller
 {
@@ -35,9 +37,9 @@ class PostController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create() // создаем пост
     {
-        //
+        return view('posts.create');
     }
 
     /**
@@ -46,9 +48,23 @@ class PostController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(Request $request) // записываем пост в бд, реквестом принимаем данные из формы
     {
-        //
+        $post = new Post(); // создаем новый объект класса пост
+        $post->title = $request->title;
+        $post->short_title = Str::length($request->title)>30 ? Str::substr($request->title, 0, 30) . '...' : $request->title; // берем титле, если больше 30 символов, то обрезаем и берем с 0 по 30 символ, если меньше 30, то берем весь
+        $post->descr = $request->descr;
+        $post->author_id = rand(1,4); // пока нет рагистрации, то ставим автора рандомно от 1 до 4
+
+        if($request->file('img')){
+            $path = Storage::putFile('public', $request->file('img')); // соединяем путь и имя файла
+            $url = Storage::url($path); // создаем урл
+            $post->img = $url; //сохраняем в базу путь
+        }
+
+        $post->save(); // сохраняем данные в базу
+
+        return redirect()->route('post.index')->with('success', 'Запись успешно создана!'); // после сохранения перекидываем на главную, если сохранчяем без ошибок, сохраняем ключ success и редиректимся
     }
 
     /**
@@ -59,7 +75,8 @@ class PostController extends Controller
      */
     public function show($id)
     {
-        //
+        $post = Post::find($id); // делаем запрос по модели в таблицу пост по ид который получаем из вьюшки индекс
+        return view('posts.show', compact('post')); // переходим на вьюшку пост
     }
 
     /**
